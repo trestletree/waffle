@@ -229,9 +229,14 @@ defmodule Waffle.Storage.S3 do
   end
 
   defp build_url(definition, version, file_and_scope, _options) do
+    # ExAws 2.8 no longer percent-encodes the path in Url.sanitize/2, so encode
+    # the raw key here. uri_encode/1 keeps "/" and encodes every character that
+    # is not valid in a path (#, ?, +, %, spaces, non-ASCII), which is what
+    # sanitize/2 produced before 2.8 for keys without "?".
     asset_path =
       s3_key(definition, version, file_and_scope)
-      |> Url.sanitize(:s3)
+      |> String.replace_prefix("/", "")
+      |> Url.uri_encode()
 
     Path.join(host(definition, file_and_scope), asset_path)
   end
